@@ -1,0 +1,31 @@
+(require [net.cgrand.enlive-html :as html])
+(require '[net.cgrand.enlive-html :as html])
+(import '(java.net URL))
+(defn fetch-url [url]
+(html/html-resource (URL. url)))
+(fetch-url "http://www.google.com")
+(defn title [url]
+(html/text (html/select (fetch-url url) [:title])))
+(title "http://www.google.com")
+(title "http://www.yahoo.com")
+(def goog (fetch-url "http://www.google.com"))
+(html/select goog [:title])
+(def gtitle (html/select goog [:title]))
+(gtitle)
+gtitle
+(html/text gtitle)
+(html/content gtitle)
+((html/content gtitle))
+(:content gtitle)
+gtitle
+(apply #(:content %) gtitle)
+(apply :content gtitle)
+(defn title [url]
+  (first (apply :content (html/select (fetch-url url) [:title]))))
+(title "http://www.google.com")
+(title "http://www.yahoo.com")
+(title "https://github.com/cgrand/enlive")
+(title "http://www.myclojureadventure.com/2011/05/parsing-web-pages-with-clojure-and.html")
+(title "http://www.reddit.com/r/raspberry_pi/comments/1l6za2/using_rpis_as_thinclients_to_connect_to_a/")
+(print (slurp "http://istruecryptauditedyet.com/"))
+(title "http://www.youtube.com/watch?v=7Dqgr0wNyPo")
