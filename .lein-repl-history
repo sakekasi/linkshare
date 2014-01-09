@@ -29,3 +29,26 @@ gtitle
 (title "http://www.reddit.com/r/raspberry_pi/comments/1l6za2/using_rpis_as_thinclients_to_connect_to_a/")
 (print (slurp "http://istruecryptauditedyet.com/"))
 (title "http://www.youtube.com/watch?v=7Dqgr0wNyPo")
+(use 'dev)
+lein deps
+(use 'clojure.java.jdbc)
+(jdbc/create-table-ddl
+   :links
+   ["IF NOT EXISTS"]
+   [:id "INT" "IDENTITY" "PRIMARY KEY"]
+   [:title "VARCHAR"]
+   [:url "VARCHAR(65535)"])
+(create-table-ddl
+   :links
+   ["IF NOT EXISTS"]
+   [:id "INT" "IDENTITY" "PRIMARY KEY"]
+   [:title "VARCHAR"]
+   [:url "VARCHAR(65535)"])
+(str "hello" "world"
+)
+(drop-table-ddl :links)
+(defmacro json-get
+[f]
+`(-> (fn [request]
+  (try
+    ~f

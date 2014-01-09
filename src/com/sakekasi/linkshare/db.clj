@@ -1,9 +1,8 @@
 (ns com.sakekasi.linkshare.db
     "the db namespace is in charge of transactions with our database"
-    (:require [clojure.java.jdbc :as jdbc]
-              [clojure.java.jdbc.sql :as sql]))
+    (:require [clojure.java.jdbc :as jdbc]))
 
-(def dbpath "/var/www/db/") ; this path is wrong. fix by looking at h2 source
+(def dbpath "/home/sakekasi/Programming/com.sakekasi.linkshare/resources/db") ; this path is wrong. fix by looking at h2 source
 (def page-size 50) ; number of links in a db page
 
 (let [db-protocol "file"
@@ -15,47 +14,79 @@
      :subname (str db-protocol "://" db-host "/" db-name)
      ; Any additional keys are passed to the driver
      ; as driver-specific properties.
-     :user     "default" ; probably want to change this
+     :user     "default"
      :password ""}))
+;; we may want different users to login, implementing multi user.
+;; different db tables for different users
 
-(defn put-link 
-  "inserts a single title, url pair into the database"
-  [title url]
-  (sql/with-connection db
-    (sql/insert-record
-     :links
-     {:title title :url url})))
+(def create-table
+  "ddl command to create the appropriate table"
+  (str "CREATE TABLE IF NOT EXISTS links (id INT IDENTITY PRIMARY KEY, "
+       "title VARCHAR, "
+       "url VARCHAR(65535))"))
+
+(defn init
+  "creates the appropriate table if it does not exist"
+  []
+  (jdbc/db-do-commands db create-table))
+
+(defn reinit
+  "reinitializes table"
+  []
+  (jdbc/db-do-commands db
+    (jdbc/drop-table-ddl :links)
+    create-table))
 
 (defn put-links
-  "inserts multiple title, url pairs into the database"
-  [links]
-  (sql/with-connection db
-    (sql/insert-records
-     :links
-     links)))
+  "inserts multiple * pairs into the database"
+  [titles urls]
+  (apply (partial jdbc/insert! db
+          :links
+          [:title :url])
+         (map vector titles urls)))
+
+(defn put-link
+  "inserts a single * pair into the database"
+  [title url]
+  (put-links (vector title) (vector url)))
 
 (defn get-link
+  "gets the link with id from the table"
+  [id]
+  (first
+   (jdbc/query db 
+               ["SELECT * from links where id=(?)" id])))
+
+(defn get-latest-link
   "gets the latest link from the table"
   []
-  (sql/with-connection db
-    (sql/with-query-results rs 
-      ["SELECT row from links ORDER BY id DESC LIMIT 1"]
-      (first rs))))
+  (first 
+   (jdbc/query db
+               ["SELECT * from links ORDER BY id DESC LIMIT 1"])))
 
 (defn get-links
-  "gets page-size links older than id"
+  "gets page-size links older than lim"
   [lim]
-  (sql/with-connection db
-    (sql/with-query-results rs
-      [(str "SELECT rows from links WHERE id<" lim)]
-      (doall page-size rs))))
+  (doall page-size
+         (jdbc/query db
+                     ["SELECT * from links where id<(?)" lim])))
 
 (defn get-latest-links
   "gets the page-size newest links"
   []
-  (sql/with-connection db
-    (sql/with-query-results rs
-      [(str "SELECT row from links ORDER BY id DESC LIMIT " page-size)]
-      (doall rs))))
+  (doall
+   (jdbc/query db
+               ["SELECT * from links ORDER BY id DESC LIMIT (?)" 
+                page-size])))
+           
+(defn remove-links
+  "removes links with ids from db"
+  [ids]
+  (apply (partial jdbc/db-do-prepared db)
+       (map (partial vector "DELETE FROM links WHERE id=(?)")
+            ids)))
 
-
+(defn remove-link
+  "removes link with id from db"
+  [id]
+  (remove-links (vector id)))

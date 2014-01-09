@@ -3,23 +3,146 @@
               [io.pedestal.service.http.route :as route]
               [io.pedestal.service.http.body-params :as body-params]
               [io.pedestal.service.http.route.definition :refer [defroutes]]
-              [ring.util.response :as ring-resp]))
 
-(defn about-page
-  [request]
-  (ring-resp/response (format "Clojure %s - served from %s"
-                              (clojure-version)
-                              (route/url-for ::about-page))))
+              [ring.util.response :as ring-resp]
+              [ring.middleware.params :as ring-mw-p]
+              [ring.middleware.json :as ring-mw-j]
+
+              [com.sakekasi.linkshare.url :as url]
+              [com.sakekasi.linkshare.db :as db]))
+; RESTful API:
+; ---------------------
+; /lookup?url="" (get)
+; /link          (get)
+; /link/:id      (get)
+; /link          (post)
+; /links         (get)
+; /links/:lim    (get)
+; /links         (post)
+; /rmlink/:id    (get)
+; /rmlinks       (post)
+; /reset         (get)
+
+(defn response-type
+  [type]
+  (comp #(ring-resp/content-type % type)
+        ring-resp/response))
+        
+
+(def json-response (response-type "application/json"))
+(def text-response (response-type "text/plain"))
+
+(defmacro json-get ; sends the return value of f as json
+  [f]
+  `(-> (fn [request#]
+         (-> (~f request#)
+             json-response))
+       ring-mw-j/wrap-json-response))
+
+(defmacro json-do ; executes f, responds with success, takes json args
+  [f]
+  `(-> (fn [request#]
+         (try
+           (~f request#)
+           (-> "" text-response)
+           (catch Exception e#
+             (-> (str (.getMessage e#) (.printStackTrace e#))
+                 ring-resp/response
+                 (ring-resp/status 500)))))
+       ring-mw-j/wrap-json-params))
+
+
+(def lookup-url
+  "returns the title of the page at url" ; /lookup?url="" (get)
+  (-> (fn [request]
+        (println (get-in request [:params :url] "NULL"))
+        (-> (url/title (get-in request [:params :url] ""))
+            text-response))
+      ring-mw-p/wrap-params))
+
+
+(def lookup-latest-link
+  "returns the json description of the last interned link" ; /link (get)
+  (json-get (fn [request] (db/get-latest-link))))
+
+(def lookup-link
+  "returns the json description of the link with id" ; /link/:id (get)
+  (json-get #(db/get-link (get-in % [:path-params :id]))))
+
+(def intern-link
+  "interns link passed in json in db" ; /link (post)
+  (json-do #(db/put-link (get-in % [:json-params :title])
+                         (get-in % [:json-params :url]))))
+
+(def lookup-latest-links 
+  "returns a json list of the latest links page"  ; /links (get)
+  (json-get (fn [request] (db/get-latest-links))))
+
+(def lookup-links
+  "returns a json list of links older than lim" ; /links/:lim (get)
+  (json-get #(db/get-links (get-in % [:path-params "lim"]))))
+
+(def intern-links
+  "interns links passed in json in db" ; /links (post)
+  (json-do #(db/put-links (map (fn [a] (:title a)) (:json-params %))
+                           (map (fn [a] (:url a)) (:json-params %)))))
+
+
+(def delete-link ;;; may need to rewrite
+  "removes link with id from db" ; /rmlink/:id (get)
+  (json-do #(db/remove-link (get-in % [:path-params "id"]))))
+
+(def delete-links
+  "removes all links with ids from db" ; /rmlinks (post)
+  (json-do #(db/remove-links (map (fn [a] (Integer/parseInt a))
+                                  (:json-params %)))))
+
+(def reset
+  "removes all links from db" ; /reset (get)
+  (json-do #(db/reinit)))
+
 
 (defn home-page
+  "basic home page for rest api"
   [request]
-  (ring-resp/response "Hello World!"))
+  (-> (str "<pre>Welcome to the linkshare REST API\n"
+           "--------------------------------------\n"
+           "/lookup?url="" (get)\n"
+           "/link          (get)\n"
+           "/link/:id      (get)\n"
+           "/link         (post)\n"
+           "/links         (get)\n"
+           "/links/:lim    (get)\n"
+           "/links        (post)\n"
+           "/rmlink/:id    (get)\n"
+           "/rmlinks      (post)\n"
+           "/reset         (get)</pre>")
+      ring-resp/response
+      (ring-resp/content-type "text/html")))
+
 
 (defroutes routes
-  [[["/" {:get home-page}
+  [[
+    ["/" {:get home-page}
      ;; Set default interceptors for /about and any other paths under /
      ^:interceptors [(body-params/body-params) bootstrap/html-body]
-     ["/about" {:get about-page}]]]])
+     ["/lookup" 
+;      ^:constraints {:url #"^(?:https?://)?(?:[\w]+\.)(?:\.?[\w]{2,})+$"}
+      {:get lookup-url}]
+     ["/link" {:get lookup-latest-link :post intern-link}
+      ["/:id" 
+;       ^:constraints {:id #"[0-9]+"}
+       {:get lookup-link}]]
+     ["/links" {:get lookup-latest-links :post intern-links}
+      ["/:lim" 
+;       ^:constraints {:lim #"[0-9]+"}
+       {:get lookup-links}]]
+     ["/rmlink/:id" 
+;      ^:constratins {:id #"[0-9]+"}
+      {:get delete-link}]
+     ["/rmlinks" {:post delete-links}]
+     ["/reset" {:get reset}]]
+    ]])
 
 ;; Consumed by com.sakekasi.linkshare.server/create-server
 ;; See bootstrap/default-interceptors for additional options you can configure

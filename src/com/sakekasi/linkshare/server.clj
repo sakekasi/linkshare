@@ -2,11 +2,14 @@
   (:gen-class) ; for -main method in uberjar
   (:require [io.pedestal.service-tools.server :as server]
             [com.sakekasi.linkshare.service :as service]
-            [io.pedestal.service-tools.dev :as dev]))
+            [io.pedestal.service-tools.dev :as dev]
+
+            [com.sakekasi.linkshare.db :as db]))
 
 (defn run-dev
   "The entry-point for 'lein run-dev'"
   [& args]
+  (db/init)
   (dev/init service/service #'service/routes)
   (apply dev/-main args))
 
@@ -16,6 +19,7 @@
 (defn -main
   "The entry-point for 'lein run'"
   [& args]
+  (db/init)
   (server/init service/service)
   (apply server/-main args))
 
