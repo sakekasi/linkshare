@@ -1,12 +1,8 @@
 =======
-linkshare
+linkshare: com.sakekasi.linkshare
 =========
 
 a webapp for easy link sharing and importing to browser bookmarks.
-
-# com.sakekasi.linkshare
-
-FIXME
 
 ## Getting Started
 
