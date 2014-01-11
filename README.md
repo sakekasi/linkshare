@@ -7,7 +7,7 @@ a webapp for easy link sharing and importing to browser bookmarks.
 ## Getting Started (DEV)
 
 1. Start the application: `lein run-dev` \*
-2. Go to [localhost:8080](http://localhost:8080/) to see: the rest guide
+2. Go to [localhost:8080](http://localhost:8080/) to see a basic overview of the REST API
 3. Read your app's source code at src/com/sakekasi/linkshare/service.clj. Explore the docs of functions
    that define routes and responses.
 4. Run your app's tests with `lein test`. Read the tests at test/com/sakekasi/linkshare/service_test.clj.
