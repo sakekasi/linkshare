@@ -3,7 +3,7 @@
     (:require [clojure.java.jdbc :as jdbc]))
 
 (def dbpath "/home/sakekasi/Programming/com.sakekasi.linkshare/resources/db") ; this path is wrong. fix by looking at h2 source
-(def page-size 50) ; number of links in a db page
+(def page-size 20) ; number of links in a db page
 
 (let [db-protocol "file"
       db-host dbpath
@@ -48,6 +48,7 @@
 (defn put-link
   "inserts a single * pair into the database"
   [title url]
+  (println title url)
   (put-links (vector title) (vector url)))
 
 (defn get-link
@@ -68,8 +69,8 @@
   "gets page-size links older than lim"
   [lim]
   (doall page-size
-         (jdbc/query db
-                     ["SELECT * from links where id<(?)" lim])))
+   (jdbc/query db
+               ["SELECT * from links WHERE id<(?) ORDER BY id DESC" lim])))
 
 (defn get-latest-links
   "gets the page-size newest links"
@@ -82,9 +83,11 @@
 (defn remove-links
   "removes links with ids from db"
   [ids]
-  (apply (partial jdbc/db-do-prepared db)
-       (map (partial vector "DELETE FROM links WHERE id=(?)")
-            ids)))
+  (println (map vector ids))
+  (doall (map (partial jdbc/db-do-prepared db 
+                       "DELETE FROM links WHERE id=(?)")
+              (map vector ids))))
+;(partial vector "DELETE FROM links WHERE id=(?)")
 
 (defn remove-link
   "removes link with id from db"

@@ -80,7 +80,7 @@
 
 (def lookup-links
   "returns a json list of links older than lim" ; /links/:lim (get)
-  (json-get #(db/get-links (get-in % [:path-params "lim"]))))
+  (json-get #(db/get-links (get-in % [:path-params :lim]))))
 
 (def intern-links
   "interns links passed in json in db" ; /links (post)
@@ -89,17 +89,16 @@
 
 
 (def delete-link ;;; may need to rewrite
-  "removes link with id from db" ; /rmlink/:id (get)
-  (json-do #(db/remove-link (get-in % [:path-params "id"]))))
+  "removes link with id from db" ; /rmlink/:id (delete)
+  (json-do #(db/remove-link (get-in % [:path-params :id]))))
 
 (def delete-links
   "removes all links with ids from db" ; /rmlinks (post)
-  (json-do #(db/remove-links (map (fn [a] (Integer/parseInt a))
-                                  (:json-params %)))))
+  (json-do #(db/remove-links (:json-params %))))
 
 (def reset
-  "removes all links from db" ; /reset (get)
-  (json-do #(db/reinit)))
+  "removes all links from db" ; /reset (delete)
+  (json-do (fn [request] (db/reinit))))
 
 
 (defn home-page
@@ -107,16 +106,16 @@
   [request]
   (-> (str "<pre>Welcome to the linkshare REST API\n"
            "--------------------------------------\n"
-           "/lookup?url="" (get)\n"
+           "/lookup?url=""   (get) make the url unquoted\n"
            "/link          (get)\n"
            "/link/:id      (get)\n"
-           "/link         (post)\n"
+           "/link          (post)\n"
            "/links         (get)\n"
            "/links/:lim    (get)\n"
-           "/links        (post)\n"
-           "/rmlink/:id    (get)\n"
-           "/rmlinks      (post)\n"
-           "/reset         (get)</pre>")
+           "/links         (post)\n"
+           "/rmlink/:id    (delete)\n"
+           "/rmlinks       (post) pass a json array of ints\n"
+           "/reset         (delete)</pre>")
       ring-resp/response
       (ring-resp/content-type "text/html")))
 
@@ -137,11 +136,11 @@
       ["/:lim" 
 ;       ^:constraints {:lim #"[0-9]+"}
        {:get lookup-links}]]
-     ["/rmlink/:id" 
+     ["/rmlink/:id" ;;should be a delete rather than a post/get?
 ;      ^:constratins {:id #"[0-9]+"}
-      {:get delete-link}]
+      {:delete delete-link}]
      ["/rmlinks" {:post delete-links}]
-     ["/reset" {:get reset}]]
+     ["/reset" {:delete reset}]]
     ]])
 
 ;; Consumed by com.sakekasi.linkshare.server/create-server
