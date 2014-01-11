@@ -19,5 +19,6 @@ To learn more about configuring Logback, read its [documentation](http://logback
 
 ## TODO
 * write test code for basic API sanity
-* write log code on server side(io.pedestal.service.log)
+* add log code to service.clj (io.pedestal.service.log)
+* find a way to put back regex checking in defroutes (service.clj)
 
