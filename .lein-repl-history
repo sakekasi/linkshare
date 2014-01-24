@@ -52,3 +52,18 @@ lein deps
 `(-> (fn [request]
   (try
     ~f
+(require '[clojure.data.json :as json])
+(json/write-str {:a "a" :b "b"})
+(json/write-str {:title "Google" :url "http://www.google.com"})
+(println (json/write-str {:title "Google" :url "http://www.google.com"}))
+  (:require '[clojure.data.json :as json])
+(json/write-str {:title "Google" :url "http://www.google.com" :escape-slash false)
+(json/write-str {:title "Google" :url "http://www.google.com"} :escape-slash false)
+(clojure.data.json/write-str {:title "Google" :url "http://www.google.com"} :escape-slash false)
+  (require '[clojure.data.json :as json])
+(json/write-str {:title "Google" :url "http://www.google.com"} :escape-slash false)
+(println (json/write-str {:title "Google" :url "http://www.google.com"} :escape-slash false))
+(str 1)
+(println (json/write-str [1,2,3,4,5,"6"]))
+  (require '[clojure.data.json :as json])
+(println (json/write-str [1,2,3,4,5,"6"]))

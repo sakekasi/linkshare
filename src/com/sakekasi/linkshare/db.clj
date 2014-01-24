@@ -48,7 +48,6 @@
 (defn put-link
   "inserts a single * pair into the database"
   [title url]
-  (println title url)
   (put-links (vector title) (vector url)))
 
 (defn get-link
@@ -83,7 +82,6 @@
 (defn remove-links
   "removes links with ids from db"
   [ids]
-  (println (map vector ids))
   (doall (map (partial jdbc/db-do-prepared db 
                        "DELETE FROM links WHERE id=(?)")
               (map vector ids))))

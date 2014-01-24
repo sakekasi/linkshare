@@ -5,6 +5,7 @@
             :url "http://www.gnu.org/licenses/gpl-2.0.html"}
   :dependencies [[org.clojure/clojure "1.5.1"]
                  [org.clojure/java.jdbc "0.3.0"]
+                 [org.clojure/data.json "0.2.4"]
 
                  [io.pedestal/pedestal.service "0.2.2"]
                  [io.pedestal/pedestal.service-tools "0.2.2"]

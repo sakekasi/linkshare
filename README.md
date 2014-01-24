@@ -17,8 +17,3 @@ with `lein run`.
 To configure logging see config/logback.xml. By default, the app logs to stdout and logs/.
 To learn more about configuring Logback, read its [documentation](http://logback.qos.ch/documentation.html).
 
-## TODO
-* write test code for basic API sanity
-* add log code to service.clj (io.pedestal.service.log)
-* find a way to put back regex checking in defroutes (service.clj)
-

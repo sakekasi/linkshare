@@ -3,6 +3,7 @@
               [io.pedestal.service.http.route :as route]
               [io.pedestal.service.http.body-params :as body-params]
               [io.pedestal.service.http.route.definition :refer [defroutes]]
+              [io.pedestal.service.log :as log]
 
               [ring.util.response :as ring-resp]
               [ring.middleware.params :as ring-mw-p]
@@ -55,7 +56,6 @@
 (def lookup-url
   "returns the title of the page at url" ; /lookup?url="" (get)
   (-> (fn [request]
-        (println (get-in request [:params :url] "NULL"))
         (-> (url/title (get-in request [:params :url] ""))
             text-response))
       ring-mw-p/wrap-params))
@@ -126,18 +126,18 @@
      ;; Set default interceptors for /about and any other paths under /
      ^:interceptors [(body-params/body-params) bootstrap/html-body]
      ["/lookup" 
-;      ^:constraints {:url #"^(?:https?://)?(?:[\w]+\.)(?:\.?[\w]{2,})+$"}
+      ^:constraints {:url #"^(?:https?://)?(?:[\w]+\.)(?:\.?[\w]{2,})+$"}
       {:get lookup-url}]
      ["/link" {:get lookup-latest-link :post intern-link}
       ["/:id" 
-;       ^:constraints {:id #"[0-9]+"}
+       ^:constraints {:id #"[0-9]+"}
        {:get lookup-link}]]
      ["/links" {:get lookup-latest-links :post intern-links}
       ["/:lim" 
-;       ^:constraints {:lim #"[0-9]+"}
+       ^:constraints {:lim #"[0-9]+"}
        {:get lookup-links}]]
      ["/rmlink/:id" ;;should be a delete rather than a post/get?
-;      ^:constratins {:id #"[0-9]+"}
+      ^:constraints {:id #"[0-9]+"}
       {:delete delete-link}]
      ["/rmlinks" {:post delete-links}]
      ["/reset" {:delete reset}]]
