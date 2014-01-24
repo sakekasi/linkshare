@@ -33,24 +33,24 @@
 (def json-response (response-type "application/json"))
 (def text-response (response-type "text/plain"))
 
-(defmacro json-get ; sends the return value of f as json
+(defn json-get ; sends the return value of f as json
   [f]
-  `(-> (fn [request#]
-         (-> (~f request#)
-             json-response))
-       ring-mw-j/wrap-json-response))
+  (-> (fn [request]
+        (-> (f request)
+            json-response))
+      ring-mw-j/wrap-json-response))
 
-(defmacro json-do ; executes f, responds with success, takes json args
+(defn json-do ; executes f, responds with success, takes json args
   [f]
-  `(-> (fn [request#]
-         (try
-           (~f request#)
-           (-> "" text-response)
-           (catch Exception e#
-             (-> (str (.getMessage e#) (.printStackTrace e#))
-                 ring-resp/response
-                 (ring-resp/status 500)))))
-       ring-mw-j/wrap-json-params))
+  (-> (fn [request]
+        (try
+          (f request)
+          (-> "" text-response)
+          (catch Exception e#
+            (-> (str (.getMessage e#) (.printStackTrace e#))
+                ring-resp/response
+                (ring-resp/status 500)))))
+      ring-mw-j/wrap-json-params))
 
 
 (def lookup-url
