@@ -2,7 +2,11 @@
     "the db namespace is in charge of transactions with our database"
     (:require [clojure.java.jdbc :as jdbc]))
 
-(def dbpath "/home/sakekasi/Programming/com.sakekasi.linkshare/resources/db") ; this path is wrong. fix by looking at h2 source
+;;TODO: remove as much repetition as possible using higher order fns.
+;;TODO: add config file for dbpath etc.
+
+;(def dbpath "db") ; this path is wrong. fix by looking at h2 source
+(def dbpath "db")
 (def page-size 20) ; number of links in a db page
 
 (let [db-protocol "file"
@@ -11,7 +15,7 @@
   (def db 
     {:classname   "org.h2.Driver" ; must be in classpath
      :subprotocol "h2"
-     :subname (str db-protocol "://" db-host "/" db-name)
+     :subname db-host
      ; Any additional keys are passed to the driver
      ; as driver-specific properties.
      :user     "default"
@@ -49,6 +53,17 @@
   "inserts a single * pair into the database"
   [title url]
   (put-links (vector title) (vector url)))
+
+(defn update-link
+  "updates a single link in database"
+  [id title url]
+  (jdbc/update! db :links (-> (if (not (nil? title))
+                                 (assoc {} :title title)
+                                 {})
+                              (#(if (not (nil? url))
+                                  (assoc % :url url)
+                                  {})))
+                ["id = ?" id]))
 
 (defn get-link
   "gets the link with id from the table"
