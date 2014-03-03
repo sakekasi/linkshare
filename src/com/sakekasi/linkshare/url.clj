@@ -6,7 +6,6 @@
   (html/html-resource (URL. url)))
 
 (defn title [url]
-  (first (apply :content (html/select (fetch-url url) [:title]))))
-
-
+  (let [title (html/select (fetch-url url) [:title])]
+    (first (:content title))))
 
