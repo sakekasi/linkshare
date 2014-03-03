@@ -20,3 +20,4 @@ To learn more about configuring Logback, read its [documentation](http://logback
 TODO:
 
 * fix bug in lookup function. long urls return not found
+* fix bug in lookup function. lookup https urls, urls w/o titles
