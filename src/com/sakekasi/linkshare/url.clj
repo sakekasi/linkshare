@@ -7,5 +7,5 @@
 
 (defn title [url]
   (let [title (html/select (fetch-url url) [:title])]
-    (first (:content title))))
+    (first (:content (first title)))))
 

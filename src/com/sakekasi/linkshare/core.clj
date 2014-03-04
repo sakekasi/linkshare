@@ -8,7 +8,7 @@
             [clojure.string :refer [split]]
 
             [ring.middleware.params :refer [wrap-params]]
-            ;[ring.middleware.stacktrace :refer [wrap-stacktrace]]
+                                        ;[ring.middleware.stacktrace :refer [wrap-stacktrace]]
             [ring.middleware.cors :refer [wrap-cors]]
             [ring.util.response :refer [not-found]]
             [ring.util.codec :refer [url-decode]]
@@ -18,26 +18,19 @@
             [com.sakekasi.linkshare.url :as url]
             [com.sakekasi.linkshare.db :as db]))
 
-; RESTful API:
-; ---------------------
-; /lookup?url="" (get)
-; /link          (get)
-; /link          (post)
-; /link          (delete)
-; /link/:id      (get)
-; /link/:id      (put)
-; /link/:id      (delete)
-; /links         (get)
-; /links         (post w/ delete flag)
-; /links/:lim    (get)
-; /reset         (delete)
 
 (defn single-arg [f]
   (fn [_] (f)))
 
-(defn non-nil [key val]
-  (single-arg #(if (not (nil? val))
-                 {key val})))
+(defn non-nil [key valfn]
+  (single-arg #(let [val (valfn)]
+                 (if (not (nil? val))
+                   {key val}))))
+
+(defn non-empty [key valfn]
+  (single-arg #(let [val (valfn)]
+                 (if (not (= val []))
+                   {key val}))))
 
 (defn etag [{title :title url :url id :id}] 
   (str (hash title) (hash url) id))
@@ -80,7 +73,7 @@
                           "text/html"]
   :known-content-type? #(check-content-type % ["application/json"])
   :malformed? #(parse-json % ::json)
-  :exists? (non-nil ::val (db/get-link id))
+  :exists? (non-nil ::val #(db/get-link id))
   :handle-ok ::val
   :can-put-to-missing? nil
   :put! (comp db/update-link ::json)
@@ -93,7 +86,7 @@
                           "text/html"]
   :known-content-type? #(check-content-type % ["application/json"])
   :malformed? #(parse-json % ::json)
-  :exists? (non-nil ::val (db/get-latest-link))
+  :exists? (non-nil ::val #(db/get-latest-link))
   :handle-ok ::val
   :post! (comp db/put-link ::json)
   :delete! (fn [ctx] (db/remove-link (get-in ctx [::val :id])))
@@ -102,20 +95,20 @@
 (defresource links [lim]
   :allowed-methods [:get]
   :available-media-types ["application/json"
-                         "text/html"]
-  :exists? (non-nil ::val (db/get-links lim))
+                          "text/html"]
+  :exists? (non-empty ::val #(db/get-links lim))
   :handle-ok (fn [ctx] {:links (::val ctx)
                         :next (:id (last (::val ctx)))})
   :etag (comp m-etag ::val))
 
-  
+
 (defresource latest-links
   :allowed-methods [:get :post]
   :available-media-types ["application/json"
-                         "text/html"]
+                          "text/html"]
   :known-content-type? #(check-content-type % ["application/json"])
   :malformed? #(parse-json % ::json)
-  :exists? (non-nil ::val (db/get-latest-links))
+  :exists? (non-empty ::val #(db/get-latest-links))
   :handle-ok (fn [ctx] {:links (::val ctx)
                         :next (:id (last (::val ctx)))})
   :post! (fn [ctx] (if (get-in ctx [::json :delete])
@@ -123,10 +116,10 @@
                      (db/put-links (get-in ctx [::json :links]))))
   :etag (comp m-etag ::val))
 
-(defresource lookup-url ;;needs to be wrapped in wrap-params
+(defresource lookup-url 
   :allowed-methods [:get]
   :available-media-types ["text/plain"
-                         "text/html"]
+                          "text/html"]
   :malformed? #(nil? (get-in % [:request :params "url"]))
   :handle-ok (fn [ctx] (url/title (url-decode 
                                    (get-in ctx [:request :params "url"])))))
@@ -138,7 +131,7 @@
 (defresource home-page
   :allowed-methods [:get]
   :available-media-types ["text/plain"
-                         "text/html"]
+                          "text/html"]
   :handle-ok (str "<pre>Welcome to the linkshare REST API\n"
                   "--------------------------------------\n"
                   "/lookup?url=""   (get) make the url unquoted\n"
@@ -162,18 +155,8 @@
   (ANY ["/links/:lim", :lim #"[0-9]+"] [lim] (links lim))
   (ANY "/lookup" [] lookup-url)
   (ANY "/reset" [] reset)
-  (ANY "*" [] (not-found "not found"))
-  )
+  (ANY "*" [] (not-found "not found")))
 
-
-(defn allow-cross-origin  
-  "middleware function to allow cross origin"  
-  [handler]  
-  (fn [request]  
-    (println "allowing cross origin")
-    (let [response (handler request)]  
-      (assoc-in response [:headers "Access-Control-Allow-Origin"]  
-                "*"))))
 
 (def app
   (-> linkshare

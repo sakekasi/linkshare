@@ -15,7 +15,8 @@
                  [ring-cors "0.1.0"]
 
                  [enlive "1.1.5"]
-                 [com.h2database/h2 "1.3.168"]]
+                 [com.h2database/h2 "1.3.168"]
+                 [mysql/mysql-connector-java "5.1.25"]]
   :plugins [[lein-ring "0.8.10"]]
   :dev-dependencies [[ring-server "0.3.1"]
                      [lein-ring "0.8.10"]
@@ -26,7 +27,6 @@
          :destroy com.sakekasi.linkshare.core/destroy
          :war-exclusions [#"com.sakekasi.linkshare.repl"]
          :servlet-name "linkshare"}
-  :aot [com.sakekasi.linkshare.core]
   :resource-paths ["config", "resources"])
 
 
