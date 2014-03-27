@@ -98,7 +98,7 @@
                           "text/html"]
   :exists? (non-empty ::val #(db/get-links lim))
   :handle-ok (fn [ctx] {:links (::val ctx)
-                        :next (:id (last (::val ctx)))})
+                        :next (:id (first (::val ctx)))})
   :etag (comp m-etag ::val))
 
 
@@ -110,7 +110,7 @@
   :malformed? #(parse-json % ::json)
   :exists? (non-empty ::val #(db/get-latest-links))
   :handle-ok (fn [ctx] {:links (::val ctx)
-                        :next (:id (last (::val ctx)))})
+                        :next (:id (first (::val ctx)))})
   :post! (fn [ctx] (if (get-in ctx [::json :delete])
                      (db/remove-links (get-in ctx [::json :ids]))
                      (db/put-links (get-in ctx [::json :links]))))

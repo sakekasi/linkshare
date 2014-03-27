@@ -20,3 +20,4 @@ TODO:
 * fix bug in lookup function. long urls return not found
 * fix bug in lookup function. lookup https urls, urls w/o titles
 * fix bug in lookup function. follow redirects
+* add functionality to return firefox-formatted xml from links
